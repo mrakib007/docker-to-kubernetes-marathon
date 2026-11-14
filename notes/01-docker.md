@@ -33,6 +33,27 @@ uname -r
 - `run`: Create and start a container.
 - `--rm`: Remove the container after it exits.
 
+## Docker Architecture
+
+- **CLI:** Sends requests to the Docker Engine.
+- **dockerd:** Manages Docker resources.
+- **containerd:** Manages the container lifecycle.
+- **runc:** Creates isolated container processes.
+- **Linux kernel:** Executes processes and provides isolation.
+
+### Architecture flow
+
+```text
+CLI → dockerd → containerd → runc → Linux kernel
+```
+
+### Architecture commands
+
+```bash
+systemctl status docker  # Check Docker service
+docker info              # Inspect Docker Engine
+```
+
 ### Findings
 - Host OS:
 - Container userspace OS:
