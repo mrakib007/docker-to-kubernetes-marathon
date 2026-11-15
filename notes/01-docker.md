@@ -1,6 +1,37 @@
 ## Topic:
 ## Topic 1 — Docker vs Virtual Machines
 
+## 4. Docker Container Lifecycle
+
+A container has its own lifecycle: Created → Running → Stopped → Removed.
+
+- `docker create`: Creates a container without starting it.
+- `docker start`: Starts an existing container.
+- `docker stop`: Gracefully stops a running container.
+- `docker restart`: Restarts a container and its main process.
+- `docker rm`: Deletes a stopped container, but not its image.
+- `docker ps`: Shows running containers.
+- `docker ps -a`: Shows all containers.
+
+### Important Concepts
+
+- A container normally runs as long as its main process is running.
+- `sleep 300` keeps the process alive for 300 seconds (5 minutes).
+- When the main process exits, the container stops.
+- Stopping a container does not delete its data.
+- Removing a container deletes its writable layer, but not its image or independently stored volumes.
+
+### Practical Commands
+
+```bash
+docker create --name marathon-test alpine:3.20 sleep 300
+docker start marathon-test
+docker ps -a
+docker stop marathon-test
+docker restart marathon-test
+docker rm marathon-test
+```
+
 ## Docker Fundamentals
 
 - Docker runs applications in isolated containers.
