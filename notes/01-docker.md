@@ -71,6 +71,35 @@ docker build -t marathon-hello:v1 .
 docker build -t marathon-hello:v2 .
 ```
 
+## 7. Dockerizing a Node.js API
+
+- `FROM node:24-alpine`: Base image with Node.js.
+- `COPY`: Copies files from the build context into the image.
+- `EXPOSE`: Documents the container's listening port; does not publish it.
+- `CMD`: Starts the application.
+- `-d`: Runs the container in the background.
+- `-p HOST:CONTAINER`: Publishes a container port to the host.
+
+### Commands
+
+```bash
+docker build -t marathon-api:v1 .
+docker run -d --name marathon-api -p 3000:3000 marathon-api:v1
+curl http://localhost:3000/health
+```
+
+## 8. Docker Debugging
+
+- `docker ps -a`: Check running and stopped containers.
+- `docker logs`: Read application stdout/stderr.
+- `docker logs -f`: Follow logs in real time.
+- `docker exec`: Run commands inside an existing running container.
+- `docker inspect`: View detailed container metadata and state.
+
+### Debugging Flow
+
+Check status → Read logs → Inspect configuration → Investigate inside container.
+
 ## Docker Fundamentals
 
 - Docker runs applications in isolated containers.
