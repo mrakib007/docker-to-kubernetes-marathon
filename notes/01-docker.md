@@ -32,6 +32,45 @@ docker restart marathon-test
 docker rm marathon-test
 ```
 
+## 5. Dockerfile and Custom Images
+
+- **Dockerfile:** Instructions for building a custom image.
+- **FROM:** Uses an existing image as the base.
+- **WORKDIR /app:** Creates/sets a directory inside the image, not on the host.
+- **RUN:** Executes commands during image build.
+- **CMD:** Defines the default command when a container starts.
+- Building from Alpine adds our changes without modifying the original Alpine image.
+- Dockerfile changes require rebuilding the image.
+
+### Commands
+
+```bash
+docker build -t marathon-hello:v1 .
+docker run --rm marathon-hello:v1
+docker run --rm marathon-hello:v1 ls -l /app
+```
+
+### Build Flags
+
+- `-t`: Image name and tag.
+- `-f`: Specify a custom Dockerfile.
+- `.`: Current directory as build context.
+
+## 6. Docker Image Layers & Cache
+
+- Docker images use reusable, read-only filesystem layers.
+- Build cache avoids repeating unchanged build steps.
+- Changing an instruction can invalidate its cache and later steps.
+- Not every Dockerfile instruction creates a filesystem layer.
+- Copy dependency files before source code to cache dependency installation.
+
+### Commands
+
+```bash
+docker build -t marathon-hello:v1 .
+docker build -t marathon-hello:v2 .
+```
+
 ## Docker Fundamentals
 
 - Docker runs applications in isolated containers.
