@@ -58,6 +58,22 @@ Container deleted ≠ Volume deleted.
 
 A volume is persistent storage, but it is not automatically a backup.
 
+## PostgreSQL Volume Test
+
+- PostgreSQL stores database files in a mounted named volume.
+- `docker exec` can run `psql` without publishing port 5432.
+- `-U` selects the database user; `-d` selects the database.
+- Database records persist when the container is recreated with the same volume.
+
+## PostgreSQL Persistence — Verified
+
+- Deleted `marathon-postgres` and created `marathon-postgres-new`.
+- Reused the same named volume: `marathon-pgdata`.
+- Existing database record survived container recreation.
+- PostgreSQL data persists independently of the container.
+- `psql` requires a semicolon (`;`) to finish SQL statements.
+- `\r` clears an unfinished SQL statement in `psql`.
+
 ## Bind Mounts vs Named Volumes
 
 - **Named volume:** Docker manages the storage location.
@@ -107,6 +123,14 @@ docker network inspect bridge
 docker run --network host ...
 docker run --network none ...
 ```
+
+## Port Publishing
+
+- `-p HOST:CONTAINER` publishes a container port on the host.
+- Use `-p` when host applications need to access the container.
+- Containers on the same Docker network do not need published ports to communicate.
+- For local-only PostgreSQL access: `-p 127.0.0.1:5432:5432`.
+- `docker exec` does not require published ports.
 
 ### What is it?
 

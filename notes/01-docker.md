@@ -100,6 +100,16 @@ curl http://localhost:3000/health
 
 Check status → Read logs → Inspect configuration → Investigate inside container.
 
+## 9. Docker Environment Variables
+
+- Environment variables configure processes without changing application code.
+- Docker passes runtime variables using `-e` or `--env-file`.
+- Dockerfile `ENV` defines image-level defaults.
+- Runtime `-e` can override Dockerfile `ENV`.
+- Node.js reads variables through `process.env`.
+- Environment variables are not a secure secret store.
+- PostgreSQL `POSTGRES_*` initialization variables only initialize an empty data directory.
+
 ## Docker Fundamentals
 
 - Docker runs applications in isolated containers.

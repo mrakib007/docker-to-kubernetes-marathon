@@ -1,0 +1,9 @@
+
+services:
+  hello:
+    image: alpine:3.20
+    command: echo "Hello from Docker Compose!"
+
+
+
+
