@@ -64,6 +64,22 @@ docker run --rm marathon-hello:v1 ls -l /app
 - Not every Dockerfile instruction creates a filesystem layer.
 - Copy dependency files before source code to cache dependency installation.
 
+### Docker Build Cache
+
+- Docker builds images using cached build steps/layers.
+- Changing an instruction or its inputs invalidates its cache.
+- Subsequent layers generally rebuild; earlier layers remain cached.
+- Copy dependency files and install packages before copying frequently changing source code.
+
+## Gitignore vs Dockerignore
+
+- `.gitignore` excludes files from Git tracking.
+- `.dockerignore` excludes files from the Docker build context.
+- Never commit `node_modules` or real `.env` secrets.
+- Commit `package.json` and `package-lock.json`.
+- Docker installs dependencies using `npm ci`.
+- Ignoring unnecessary files reduces build context size.
+
 ### Commands
 
 ```bash

@@ -56,6 +56,43 @@
 - Database persistence is handled by a named volume.
 - Environment variables configure the DB address; application code makes the actual connection.
 
+## Topic 18 — API to PostgreSQL
+
+- Browser sends HTTP requests to the Node.js API.
+- Node.js uses the `pg` library to communicate with PostgreSQL.
+- API connects using `db:5432` over the Compose network.
+- PostgreSQL executes SQL and returns rows to the API.
+- API converts query results into an HTTP JSON response.
+- Updating application code requires rebuilding the Docker image unless the source is bind-mounted for development.
+
+## Node.js Dependencies in Docker
+
+- `package.json` declares application dependencies.
+- `package-lock.json` records resolved dependency versions.
+- `COPY package*.json ./` copies both files into the image.
+- `RUN npm ci --omit=dev` installs production dependencies.
+- Installing packages on the host does not install them in an image.
+- Copy dependency files before source code to improve Docker layer caching.
+
+## Compose Database Access
+
+- `docker compose exec SERVICE COMMAND` runs a command in a running service container.
+- `docker compose exec db psql ...` opens PostgreSQL inside the `db` service.
+- Compose uses its own named volume for PostgreSQL data.
+- Different volumes contain independent database files.
+- API queries require the target database table to exist.
+
+## Node.js to PostgreSQL
+
+- `pg` is a PostgreSQL client library for Node.js.
+- `Pool` manages reusable database connections.
+- `process.env` reads runtime configuration.
+- `pool.query` executes SQL and returns `result.rows`.
+- The API connects to `db:5432` through Compose networking.
+- `try/catch` handles database query failures.
+- `node --check` validates JavaScript syntax.
+- `docker compose config --quiet` validates Compose configuration.
+
 ### What is it?
 
 ### Why do we need it?
