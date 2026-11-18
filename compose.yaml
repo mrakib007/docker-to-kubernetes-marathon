@@ -9,6 +9,10 @@ services:
       DB_USER: marathon
       DB_PASSWORD: marathon123
       DB_NAME: marathondb
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
@@ -18,6 +22,22 @@ services:
       POSTGRES_DB: marathondb
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marathon -d marathondb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -93,6 +93,17 @@
 - `node --check` validates JavaScript syntax.
 - `docker compose config --quiet` validates Compose configuration.
 
+## Health Checks and Restart Policies
+
+- Running does not necessarily mean healthy or ready.
+- `healthcheck` tests application readiness or health.
+- `pg_isready` checks whether PostgreSQL accepts connections.
+- `depends_on` with `service_healthy` waits for readiness at startup.
+- `depends_on` does not continuously guarantee dependency availability.
+- `restart: unless-stopped` restarts containers after unexpected exits.
+- An unhealthy status alone does not trigger an automatic restart.
+- Applications still need runtime error handling and retries.
+
 ### What is it?
 
 ### Why do we need it?
