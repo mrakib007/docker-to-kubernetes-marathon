@@ -56,6 +56,44 @@
 - `docker compose exec nginx nginx -t`: Validate Nginx configuration.
 - `docker compose exec nginx nginx -s reload`: Reload Nginx configuration.
 
+## Nginx Rate Limiting
+
+- Rate limiting protects APIs from excessive requests and overload.
+- Nginx `limit_req` uses a leaky-bucket algorithm.
+- `$binary_remote_addr` identifies clients by IP in binary format.
+- `limit_req_zone` defines the rate, tracking key, and shared memory.
+- `zone=api_limit:10m` allocates 10 MB for tracking client request rates.
+- `rate=5r/s` sets an average of 5 requests per second per IP.
+- `burst=5` allows up to 5 excess requests within burst capacity.
+- `nodelay` processes accepted burst requests immediately.
+- `limit_req_status 429` returns HTTP 429 for rejected requests.
+
+### Configuration
+
+```nginx
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=5r/s;
+
+location / {
+    limit_req zone=api_limit burst=5 nodelay;
+    limit_req_status 429;
+}
+```
+
+### Commands
+
+```bash
+docker compose exec nginx nginx -t
+docker compose exec nginx nginx -s reload
+
+for i in $(seq 1 20); do
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/users
+done
+```
+
+- HTTP 200 = accepted request.
+- HTTP 429 = rate-limited request.
+- Rate limiting by IP may group multiple users behind the same public IP.
+
 ### What is it?
 
 ### Why do we need it?
