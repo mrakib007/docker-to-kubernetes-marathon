@@ -1,5 +1,6 @@
 services:
   api:
+    build: ./app
     image: marathon-api:v3
     environment:
       DB_HOST: db

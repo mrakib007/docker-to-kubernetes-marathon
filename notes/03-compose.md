@@ -93,6 +93,14 @@
 - `node --check` validates JavaScript syntax.
 - `docker compose config --quiet` validates Compose configuration.
 
+## Compose Build
+
+- `image:` selects the image to run.
+- `build:` specifies where the Dockerfile and build context are.
+- `--build` builds images before starting containers.
+- Docker reuses cached layers when possible.
+- Compose recreates containers when their image or configuration changes.
+
 ## Health Checks and Restart Policies
 
 - Running does not necessarily mean healthy or ready.
