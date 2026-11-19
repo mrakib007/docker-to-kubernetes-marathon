@@ -1,5 +1,6 @@
 const http = require("node:http");
 const { Pool } = require("pg");
+const os = require("node:os")
 
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -21,7 +22,11 @@ const server = http.createServer(async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM users ORDER BY id");
 
-      res.end(JSON.stringify({ users: result.rows }));
+      // res.end(JSON.stringify({ users: result.rows }));
+      res.end(JSON.stringify({
+        instance: os.hostname(),
+        users: result.rows
+      }));
     } catch (error) {
       console.error("Database query failed:", error.message);
 

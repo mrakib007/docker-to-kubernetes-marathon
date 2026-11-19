@@ -1,6 +1,6 @@
 services:
   api:
-    image: marathon-api:v2
+    image: marathon-api:v3
     environment:
       DB_HOST: db
       DB_PORT: "5432"
