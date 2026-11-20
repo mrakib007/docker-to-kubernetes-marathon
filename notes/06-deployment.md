@@ -119,3 +119,15 @@ Expose only the services that need public access.
 Browser → Nginx → Node.js → PostgreSQL
           Public     Private     Private
 ```
+
+### Linux Server Preparation
+
+- VPS: Virtual machine hosted by a cloud provider.
+- SSH: Secure remote access to a Linux server.
+- SSH key authentication: Server verifies proof of private-key ownership using the authorized public key.
+- `authorized_keys`: Public keys allowed to log in.
+- VirtualBox NAT: Forwards host port 2222 to guest port 22.
+- SSH hardening: Disable password authentication and direct root login.
+- UFW: Linux firewall management tool.
+- Allow port 22 before enabling UFW to preserve SSH access.
+- `sudo`: Grants administrative privileges; may still require the user's password.
