@@ -154,6 +154,48 @@ curl -k -i https://localhost:8443/users
 
 **Verified:** HTTPS returned `HTTP 200` with API JSON.
 
+## Topic 27 — HTTP to HTTPS Redirect
+
+- HTTP is unencrypted; HTTPS uses TLS encryption.
+- Nginx can redirect HTTP requests to HTTPS.
+- `301` = permanent redirect.
+- `Location` header tells the browser where to go.
+- `$request_uri` preserves the path and query string.
+- `server_name` matches the requested hostname.
+- HTTP redirects do not contact the backend API.
+
+### Nginx Configuration
+
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    return 301 https://localhost:8443$request_uri;
+}
+```
+
+### Commands
+
+```bash
+# Validate configuration
+docker compose exec nginx nginx -t
+
+# Apply updated configuration
+docker compose exec nginx nginx -s reload
+
+# Inspect redirect response
+curl -i http://localhost:8080/users
+
+# Follow redirect automatically
+curl -k -L -i http://localhost:8080/users
+```
+
+- `-L` follows redirects.
+- `-k` skips certificate verification (local testing only).
+- Expected flow: HTTP 301 → HTTPS 200.
+- Production normally uses ports 80 and 443, so `:8443` is unnecessary.
+
 ### What is it?
 
 ### Why do we need it?
