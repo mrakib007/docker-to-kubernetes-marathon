@@ -94,6 +94,66 @@ done
 - HTTP 429 = rate-limited request.
 - Rate limiting by IP may group multiple users behind the same public IP.
 
+## Topic 26 — HTTPS, TLS & SSL Termination
+
+### Concepts
+
+- HTTPS = HTTP secured using TLS.
+- TLS provides encryption, server authentication, and data integrity.
+- Connection setup: TCP handshake → TLS handshake → HTTP requests/responses.
+- TLS certificate: binds a public key to a hostname and is digitally signed.
+- Certificate Authority (CA): trusted organization that verifies and signs certificates.
+- Self-signed certificate: supports encryption but is not trusted automatically by browsers.
+- Subject Alternative Name (SAN): lists hostnames covered, e.g. `DNS:localhost`.
+- TLS termination: Nginx decrypts incoming HTTPS traffic and forwards HTTP to the backend in our setup.
+- Keep-Alive: multiple HTTP requests can reuse one TCP connection, avoiding repeated handshakes.
+
+### Local HTTPS Configuration
+
+- Host port `8443` → container port `443`.
+- `localhost.crt` = certificate; `localhost.key` = private key.
+- Certificates are bind-mounted read-only into Nginx.
+- Keep `nginx/certs/` out of Git.
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name localhost;
+
+    ssl_certificate /etc/nginx/certs/localhost.crt;
+    ssl_certificate_key /etc/nginx/certs/localhost.key;
+
+    location / {
+        proxy_pass http://backend;
+    }
+}
+```
+
+### Commands
+
+```bash
+mkdir -p nginx/certs
+
+openssl req -x509 -nodes -days 30 \
+  -newkey rsa:2048 \
+  -keyout nginx/certs/localhost.key \
+  -out nginx/certs/localhost.crt \
+  -subj "/CN=localhost" \
+  -addext "subjectAltName=DNS:localhost"
+
+docker compose up -d --no-deps nginx
+docker compose exec nginx nginx -t
+curl -k -i https://localhost:8443/users
+```
+
+- `--no-deps`: Do not start or recreate dependent services.
+- `-k`: Skip certificate verification for local testing only.
+- Edit bind-mounted `default.conf` → reload Nginx.
+- Change Compose ports/volumes → recreate the container, not the image.
+- Change Dockerfile/image contents → rebuild the image and recreate the container.
+
+**Verified:** HTTPS returned `HTTP 200` with API JSON.
+
 ### What is it?
 
 ### Why do we need it?
