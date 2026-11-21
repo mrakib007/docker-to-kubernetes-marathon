@@ -40,6 +40,27 @@ docker compose kill api
 docker compose ps
 ```
 
+### Topic 40 — Database Migrations
+
+- Migrations are version-controlled database schema changes.
+- Application code and database schema must remain compatible.
+- `git pull` downloads migration files but does not execute them.
+- Migrations should run in a controlled deployment step.
+- Production migration tools track which migrations have run.
+- Schema changes may require backward compatibility.
+- Database backups and migration rollbacks solve different problems.
+
+### Topic 41 — Zero-Downtime Deployment
+
+- Zero downtime means deploying without interrupting service.
+- Multiple replicas alone do not guarantee availability.
+- Rolling deployment replaces replicas gradually.
+- New replicas should become ready before receiving traffic.
+- Old replicas should drain existing requests before shutdown.
+- Docker Compose does not automatically provide safe rolling updates.
+- Kubernetes supports readiness-aware rolling updates.
+- Blue-green deployment uses separate old/new environments.
+
 ### What is it?
 
 ### Why do we need it?
