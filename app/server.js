@@ -36,6 +36,14 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.url === "/version") {
+  res.end(JSON.stringify({
+    version: "2.0.0",
+    environment: "production"
+  }));
+  return;
+}
+
   res.statusCode = 404;
   res.end(JSON.stringify({ error: "Not found" }));
 });
