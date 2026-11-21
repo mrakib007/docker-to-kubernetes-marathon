@@ -50,3 +50,12 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, debian-deploy]
+
+    steps:
+      - name: Deploy to Debian
+        run: sudo /usr/local/libexec/marathon/deploy.sh
