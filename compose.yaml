@@ -5,9 +5,9 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: "5432"
-      DB_USER: marathon
-      DB_PASSWORD: marathon123
-      DB_NAME: marathondb
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
     depends_on:
       db:
         condition: service_healthy
@@ -16,13 +16,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: marathon
-      POSTGRES_PASSWORD: marathon123
-      POSTGRES_DB: marathondb
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U marathon -d marathondb"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 3s
       retries: 5
