@@ -1,0 +1,4 @@
+services:
+  api:
+    image: ghcr.io/mrakib007/docker-to-kubernetes-marathon:latest
+    build: !reset null
