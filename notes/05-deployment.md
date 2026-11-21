@@ -61,6 +61,88 @@ docker compose ps
 - Kubernetes supports readiness-aware rolling updates.
 - Blue-green deployment uses separate old/new environments.
 
+## Topic 43 — Deployment Preparation & Database Migrations
+
+### 1. Production Deployment Workflow
+
+```text
+Developer Laptop (Linux Mint)
+    ↓
+Write and test application code
+    ↓
+Build and test Docker image locally
+    ↓
+Commit and push to GitHub
+    ↓
+GitHub Actions validates code
+    ↓
+Build and publish Docker image to GHCR
+    ↓
+Production server pulls image
+    ↓
+Docker Compose updates containers
+    ↓
+Verify application health
+```
+
+Core principle:
+
+> Build once, publish the artifact, and deploy the same artifact.
+
+### 2. Database Migrations
+
+A migration is a version-controlled change to a database schema.
+
+Example:
+
+```sql
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+```
+
+Our migration:
+
+```text
+app/migrations/001_add_email_to_users.sql
+```
+
+Typical workflow:
+
+1. Write the migration locally.
+2. Test the migration against the development database.
+3. Commit the migration with the application code.
+4. CI validates the application.
+5. Back up the production database.
+6. Apply the migration to production.
+7. Deploy a compatible application version.
+8. Verify application and database health.
+
+Important:
+
+- Deploying a new Docker image does **not** automatically apply database migrations.
+- Schema changes should ideally be backward-compatible.
+- Avoid dropping columns that the previous application version still needs.
+- Production migrations should have a tested recovery strategy.
+
+### 3. PostgreSQL Backup
+
+Create a compressed database backup:
+
+```bash
+docker compose exec -T db \
+  pg_dump -U marathon -d marathondb -Fc \
+  > backups/marathondb.dump
+```
+
+Restore using `pg_restore` into a separate test database.
+
+Key concepts:
+
+- Docker volumes preserve data when containers are recreated.
+- Docker volumes are **not** backups.
+- Backups should be stored separately from the database server.
+- A backup is only trustworthy after testing restoration.
+
 ### What is it?
 
 ### Why do we need it?
