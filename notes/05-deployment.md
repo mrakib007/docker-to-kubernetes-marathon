@@ -23,6 +23,23 @@ curl -k https://localhost:8443/health
 curl -k https://localhost:8443/users
 ```
 
+### Topic 38 — Restart Policies and Recovery
+
+- Docker restart policies control automatic container restarts.
+- `restart: unless-stopped` restarts crashed containers.
+- Explicitly stopped containers remain stopped.
+- Containers can restart after a server reboot when Docker starts.
+- Restart policies do not repair unhealthy running processes.
+- Named volumes preserve database data across container restarts.
+- Process recovery does not guarantee zero downtime.
+
+### Commands
+
+```bash
+docker compose kill api
+docker compose ps
+```
+
 ### What is it?
 
 ### Why do we need it?
