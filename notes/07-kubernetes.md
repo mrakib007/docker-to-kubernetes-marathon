@@ -256,6 +256,75 @@ Next:
 
 > Topic 47 — Pods, Deployments, and Services.
 
+## Topic 47 — Pods, Deployments, ReplicaSets & Services
+
+### 1. Pod
+
+- Smallest deployable unit in Kubernetes.
+- Contains one or more containers.
+- Each Pod runs on one node at a time.
+- Pods are disposable; replacements may have different IPs.
+
+### 2. Deployment
+
+- Declares the desired application configuration.
+- Manages ReplicaSets.
+- Supports scaling, rolling updates, and rollbacks.
+- Example: `replicas: 3` means maintain three API Pods.
+
+### 3. ReplicaSet
+
+- Maintains the desired number of matching Pods.
+- If a Pod is deleted, creates a replacement.
+- Managed by a Deployment in normal applications.
+
+```text
+Deployment → ReplicaSet → Pods → Containers
+```
+
+### 4. Rolling Updates
+
+- Deployment gradually replaces old Pods with new ones.
+- Readiness checks help determine whether new Pods are ready to receive traffic.
+- A failed rollout may stall.
+- Automatic rollback is not guaranteed.
+
+### 5. Kubernetes Service
+
+- Provides a stable DNS name and network endpoint.
+- Routes traffic to matching, ready Pod endpoints.
+- Automatically tracks Pods as they are replaced.
+- Does not create Pods or manage replicas.
+
+```text
+Nginx → Service → API Pods
+```
+
+### 6. Scaling
+
+```text
+Deployment replicas: 3 → 5
+```
+
+- ReplicaSet creates two additional Pods.
+- Scheduler assigns Pods to suitable nodes.
+- Insufficient capacity → Pods remain `Pending`.
+- Available capacity → Pods can start running.
+- Service automatically includes new ready Pods.
+- No manual Nginx IP configuration is needed.
+
+### 7. Responsibilities
+
+- **Deployment:** Application updates and desired configuration.
+- **ReplicaSet:** Maintains Pod count.
+- **Scheduler:** Assigns Pods to nodes.
+- **Kubelet:** Runs and monitors Pods on nodes.
+- **Service:** Provides stable network access to Pods.
+
+### Interview Summary
+
+A Deployment manages application rollout and scaling through ReplicaSets, which maintain the desired number of Pods. A Kubernetes Service provides stable networking and routes traffic to available Pod endpoints, even when Pods are replaced or scaled.
+
 ### What is it?
 
 ### Why do we need it?
