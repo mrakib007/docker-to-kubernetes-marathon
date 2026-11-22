@@ -325,6 +325,451 @@ Deployment replicas: 3 → 5
 
 A Deployment manages application rollout and scaling through ReplicaSets, which maintain the desired number of Pods. A Kubernetes Service provides stable networking and routes traffic to available Pod endpoints, even when Pods are replaced or scaled.
 
+## Topic 48 — Kubernetes Networking
+
+### 1. Kubernetes Networking Overview
+
+Kubernetes allows Pods to communicate across different nodes (physical or virtual machines).
+
+Main networking components:
+
+- **CNI:** Provides Pod networking.
+- **Service:** Provides stable access to Pods.
+- **Ingress:** Defines HTTP/HTTPS routing rules.
+- **Ingress Controller:** Implements those routing rules.
+- **NetworkPolicy:** Controls allowed network traffic.
+
+### 2. Docker vs Kubernetes Networking
+
+Docker Bridge:
+
+- Connects containers on the same Docker host.
+- Containers can communicate using IP addresses.
+- User-defined bridges support container-name DNS.
+- Regular bridge networks do not span multiple hosts.
+
+Docker Overlay:
+
+- Connects containers across multiple Docker hosts.
+- Commonly used with Docker Swarm.
+
+Kubernetes:
+
+- Each Pod gets its own cluster-network IP.
+- Pods can communicate across nodes.
+- A CNI-based networking implementation provides connectivity.
+
+### 3. CNI — Container Network Interface
+
+CNI is a standard interface used by container runtimes and networking plugins to configure container networking.
+
+Examples:
+
+- Calico
+- Cilium
+- Flannel
+
+CNI plugins can provide:
+
+- Pod IP assignment
+- Pod network connectivity
+- Cross-node communication
+
+Example:
+
+```text
+Node 1                      Node 2
+API Pod                     PostgreSQL Pod
+10.244.1.5                  10.244.2.8
+    |                            |
+    +------ Pod Network ---------+
+```
+
+The API Pod can communicate directly with PostgreSQL using its Pod IP, assuming traffic is permitted.
+
+A Kubernetes Service is **not** required for direct Pod-to-Pod connectivity.
+
+### 4. Overlay Networking
+
+An overlay network connects workloads across machines using an underlying network.
+
+Example packet flow:
+
+```text
+API Pod
+   |
+   v
+Node 1
+   |
+   | Encapsulate Pod packet
+   v
+Underlying Network
+   |
+   v
+Node 2
+   |
+   | Decapsulate packet
+   v
+PostgreSQL Pod
+```
+
+- **Encapsulation:** Wrapping an original network packet inside another packet.
+- **Decapsulation:** Removing the outer wrapper at the destination.
+
+Important:
+
+> Not all Kubernetes networking plugins use overlays. Some use direct routing.
+
+### 5. Kubernetes Service
+
+Problem:
+
+Pods are disposable, and their IP addresses can change.
+
+Solution:
+
+A Service provides a stable network endpoint.
+
+```text
+API Pod
+   |
+   | postgres:5432
+   v
+PostgreSQL Service
+   |
+   v
+PostgreSQL Pod
+```
+
+If PostgreSQL's Pod IP changes, the API still connects through the same Service name.
+
+A Service:
+
+- Provides stable DNS-based access.
+- Selects Pods using labels.
+- Tracks eligible Pod endpoints.
+- Routes traffic to available endpoints.
+- Does **not** create or replace Pods.
+
+Important distinction:
+
+```text
+CNI     = Network connectivity
+Service = Stable discovery and access
+```
+
+### 6. Kubernetes Service Types
+
+#### ClusterIP
+
+Default Service type.
+
+- Exposes an application inside the cluster.
+- Provides a stable internal virtual IP and DNS name.
+- Suitable for databases and internal APIs.
+
+Example:
+
+```text
+API Pod → postgres:5432 → PostgreSQL Pod
+```
+
+#### NodePort
+
+Exposes a Service through a port on cluster nodes.
+
+Example:
+
+```text
+Client → NodeIP:30080 → Service → API Pod
+```
+
+- Useful for testing and certain infrastructure setups.
+- The receiving node does not need to host the target Pod.
+- External reachability depends on networking and firewall rules.
+
+#### LoadBalancer
+
+Requests an external load balancer from supported infrastructure, commonly a cloud provider.
+
+Example:
+
+```text
+Internet → External LB → Service → API Pods
+```
+
+- Useful for externally accessible applications.
+- Requires infrastructure support.
+- May incur additional cloud costs.
+- Is not automatically available in every local cluster.
+
+### 7. Ingress
+
+Ingress defines HTTP/HTTPS routing rules.
+
+Example:
+
+```text
+api.example.com   → API Service
+admin.example.com → Admin Service
+example.com       → Frontend Service
+```
+
+Ingress is a Kubernetes configuration resource. It does **not** process requests by itself.
+
+An Ingress Controller implements the rules.
+
+Example:
+
+```text
+Nginx Ingress Controller
+```
+
+Architecture:
+
+```text
+Internet
+   |
+   v
+External Load Balancer
+   |
+   v
+Ingress Controller
+   |
+   +---- api.example.com
+   |          |
+   |          v
+   |      API Service
+   |          |
+   |      API Pods
+   |
+   +---- example.com
+              |
+              v
+        Frontend Service
+              |
+         Frontend Pod
+```
+
+Backend Services can remain `ClusterIP`.
+
+### 8. Ingress vs Nginx Reverse Proxy
+
+Docker Compose:
+
+We manually configured Nginx reverse proxy rules.
+
+Example:
+
+```nginx
+proxy_pass http://api:3000;
+```
+
+Kubernetes:
+
+We declare routing rules through Ingress resources.
+
+The Ingress Controller reads those rules and configures the underlying proxy or traffic-routing implementation.
+
+```text
+Ingress            = Routing configuration
+Ingress Controller = Traffic-routing implementation
+```
+
+Note:
+
+> Gateway API is a newer Kubernetes networking API. Ingress is still supported, but its API is frozen.
+
+### 9. HTTPS and TLS Termination
+
+Example request:
+
+```text
+GET https://api.example.com/users
+```
+
+Flow:
+
+```text
+Browser
+   |
+   | HTTPS
+   v
+External Load Balancer
+   |
+   v
+Ingress Controller
+   |
+   | TLS termination (in this example)
+   v
+API Service
+   |
+   | HTTP
+   v
+Node.js API Pod
+```
+
+The Ingress Controller:
+
+- Uses a TLS certificate and private key.
+- Handles the TLS connection.
+- Decrypts incoming HTTPS traffic.
+- Routes requests to the appropriate backend Service.
+
+TLS certificates can be configured through Kubernetes TLS Secrets.
+
+Internal traffic can use HTTP or HTTPS depending on the architecture and security requirements. TLS termination can also happen at other components depending on infrastructure configuration.
+
+### 10. Frontend Deployment
+
+Frontend applications can also run inside Kubernetes.
+
+Example:
+
+```text
+Frontend Pod
+   |
+   └── Nginx Container
+        └── Serves React build files
+```
+
+Typical architecture:
+
+```text
+Internet
+   |
+   v
+Ingress Controller
+   |
+   +---- Frontend Service → Frontend Pod
+   |
+   +---- API Service → API Pods
+```
+
+Alternatives:
+
+- Static React frontend hosted on a CDN.
+- Frontend hosted on a static hosting platform.
+- Server-rendered frontend deployed in Kubernetes.
+
+A frontend does not have to run inside Kubernetes.
+
+### 11. Pod Distribution Across Nodes
+
+Three API replicas do **not** automatically mean three different nodes.
+
+Possible:
+
+```text
+Node 1:
+- API Pod 1
+- API Pod 2
+- API Pod 3
+```
+
+Also possible:
+
+```text
+Node 1 → API Pod 1
+Node 2 → API Pod 2
+Node 3 → API Pod 3
+```
+
+The Kubernetes Scheduler decides Pod placement based on resources and scheduling constraints.
+
+For high availability, spreading replicas across different nodes is generally preferable.
+
+Useful scheduling features:
+
+- Pod anti-affinity
+- Topology spread constraints
+
+Without appropriate rules, Kubernetes does not guarantee one replica per node.
+
+### 12. Node Failure and Network Recovery
+
+Initial state:
+
+```text
+Node 1 → API Pod 1
+Node 2 → API Pod 2
+Node 3 → API Pod 3
+
+Desired replicas: 3
+```
+
+Node 2 fails.
+
+Kubernetes eventually detects the node failure.
+
+Then:
+
+1. The failed Pod stops being an eligible Service endpoint.
+2. The Service continues routing to available ready Pods.
+3. The ReplicaSet maintains the desired replica count.
+4. A replacement Pod is created when appropriate.
+5. The Scheduler chooses a healthy node with capacity.
+6. The Kubelet starts the replacement Pod.
+7. The Service includes the new Pod when it becomes ready.
+
+No manual changes to Ingress or Service are needed.
+
+Important:
+
+- Readiness probes check application readiness.
+- Node health detection identifies node failures.
+- Service handles network traffic.
+- ReplicaSet maintains Pod count.
+- Scheduler chooses the node.
+- Kubelet manages containers on that node.
+
+Recovery may take time.
+
+### 13. Complete Production Request Flow
+
+```text
+Browser
+   |
+   | HTTPS
+   v
+External Load Balancer
+   |
+   v
+Ingress Controller
+   |
+   | TLS termination + HTTP routing
+   v
+marathon-api Service (ClusterIP)
+   |
+   +---- API Pod 1
+   +---- API Pod 2
+   +---- API Pod 3
+             |
+             v
+      postgres Service
+         (ClusterIP)
+             |
+             v
+       PostgreSQL Pod
+             |
+             v
+      Persistent Storage
+```
+
+The actual Pods may run on different nodes.
+
+### 14. Interview-Ready Summary
+
+Kubernetes networking enables communication between Pods across nodes using a networking implementation configured through CNI.
+
+Each Pod receives an IP address, but Pod IPs are ephemeral. Kubernetes Services provide stable network endpoints and route traffic to eligible Pods.
+
+ClusterIP provides internal access, NodePort exposes a port on cluster nodes, and LoadBalancer integrates with external load-balancing infrastructure.
+
+Ingress defines HTTP/HTTPS routing rules, while an Ingress Controller implements those rules and can perform TLS termination.
+
+Kubernetes can automatically update Service endpoints as Pods are created, replaced, or removed.
+
 ### What is it?
 
 ### Why do we need it?
