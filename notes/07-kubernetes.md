@@ -770,6 +770,309 @@ Ingress defines HTTP/HTTPS routing rules, while an Ingress Controller implements
 
 Kubernetes can automatically update Service endpoints as Pods are created, replaced, or removed.
 
+## Topic 49 — Kubernetes ConfigMaps & Secrets
+
+### 1. Why External Configuration?
+
+We want to use the same Docker image across multiple environments without rebuilding it.
+
+Example:
+
+```text
+marathon-api:v1
+    |
+    ├── Development → DB_HOST=postgres-dev
+    ├── Staging     → DB_HOST=postgres-test
+    └── Production  → DB_HOST=postgres-prod
+```
+
+```text
+Application image = Code + dependencies
+Runtime configuration = Environment-specific values
+```
+
+Benefits:
+
+- Build once, deploy across environments.
+- Change configuration without rebuilding images.
+- Keep credentials out of source code and images.
+
+### 2. Environment Variables in Docker
+
+Dockerfile:
+
+```dockerfile
+ENV NODE_ENV=production
+```
+
+This sets a default value in the image.
+
+Override it when creating a container:
+
+```bash
+docker run -e DB_HOST=postgres marathon-api:v1
+```
+
+Docker Compose:
+
+```yaml
+services:
+  api:
+    image: marathon-api:v1
+    environment:
+      DB_HOST: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+```
+
+Compose can read `DB_PASSWORD` from a local `.env` file for variable substitution.
+
+Inside Node.js:
+
+```javascript
+const dbHost = process.env.DB_HOST;
+const password = process.env.DB_PASSWORD;
+```
+
+Important:
+
+- Environment variables are supplied at container startup.
+- Existing processes do not automatically receive updates.
+- Never bake production passwords into Docker images.
+
+### 3. ConfigMap
+
+A ConfigMap stores non-sensitive application configuration.
+
+Examples:
+
+- `NODE_ENV`
+- `DB_HOST`
+- `DB_PORT`
+- `LOG_LEVEL`
+
+Example:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: marathon-config
+data:
+  NODE_ENV: "production"
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+```
+
+### 4. Secret
+
+A Secret stores sensitive configuration.
+
+Examples:
+
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `API_KEY`
+- TLS private keys
+
+Example:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: marathon-secret
+type: Opaque
+stringData:
+  DB_PASSWORD: "example-only-password"
+```
+
+Never commit real credentials in plaintext manifests.
+
+### 5. How Pods Receive Configuration
+
+ConfigMaps and Secrets are independent Kubernetes resources, not containers inside a Pod.
+
+A Deployment's Pod template references them.
+
+```text
+ConfigMap ──┐
+            ├── Deployment Pod Template
+Secret ─────┘             |
+                          v
+                        API Pod
+                          |
+                          v
+                    Node.js Container
+                          |
+                          v
+                      process.env
+```
+
+Example Deployment container configuration:
+
+```yaml
+env:
+  - name: DB_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: marathon-config
+        key: DB_HOST
+
+  - name: DB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: marathon-secret
+        key: DB_PASSWORD
+```
+
+Inside Node.js:
+
+```javascript
+process.env.DB_HOST
+process.env.DB_PASSWORD
+```
+
+ConfigMaps and Secrets generally must be in the same namespace as the Pod referencing them.
+
+### 6. Updating Environment Variables
+
+Suppose:
+
+```text
+Old ConfigMap:
+DB_HOST=postgres-old
+
+New ConfigMap:
+DB_HOST=postgres-new
+```
+
+Do we rebuild the Docker image?
+
+> No.
+
+Do existing containers automatically receive the new environment variable?
+
+> No.
+
+Environment variables are established when a container starts.
+
+Apply updated values with:
+
+```bash
+kubectl rollout restart deployment/marathon-api
+```
+
+The Deployment gradually replaces its Pods:
+
+```text
+Old Pods → Terminated
+New Pods → Created with updated environment variables
+```
+
+Note:
+
+> ConfigMaps and Secrets mounted as files can receive updates without replacing Pods, subject to propagation delays and mounting behavior. Applications must reload changed file contents.
+
+### 7. Container Restart vs Pod Replacement
+
+#### Scenario A — One container crashes
+
+```text
+Pod 1
+├── Node.js Container → Crashes → Restarts
+└── Logging Container → Keeps running
+```
+
+The Kubelet can restart only the failed container.
+
+#### Scenario B — Deployment rollout restart
+
+```text
+Old Pod
+├── Node.js Container
+└── Logging Container
+          |
+          v
+New Pod
+├── New Node.js Container
+└── New Logging Container
+```
+
+All containers inside the replaced Pod are recreated.
+
+Important:
+
+> Restarting one container does not necessarily replace the Pod. Replacing a Pod recreates all its containers.
+
+### 8. Kubernetes Secret Security
+
+Kubernetes Secret data may be Base64-encoded.
+
+Base64 is **not** encryption.
+
+Encoding:
+
+- Changes data representation.
+- Can be reversed without a secret key.
+
+Encryption:
+
+- Uses cryptographic keys to protect data.
+- Requires the appropriate key to decrypt.
+
+Production protections:
+
+- Enable encryption at rest for Secrets in etcd.
+- Restrict access using Kubernetes RBAC.
+- Avoid exposing secrets in logs or source control.
+- Use external secret managers where appropriate.
+
+Examples:
+
+- AWS Secrets Manager
+- Azure Key Vault
+
+Secrets injected into environment variables may also be exposed to processes or users with sufficient access to the container or node.
+
+### 9. ConfigMaps and Secrets in CI/CD
+
+```text
+Developer
+    |
+    v
+GitHub Actions
+    |
+    v
+Build Docker Image
+    |
+    v
+Push Image to GHCR
+    |
+    v
+Kubernetes Deployment
+    |
+    +── Docker Image
+    +── ConfigMap
+    +── Secret
+    |
+    v
+API Pods
+```
+
+The image contains the application. Kubernetes supplies the environment-specific values.
+
+### 10. Interview-Ready Summary
+
+Kubernetes separates application configuration from container images using ConfigMaps and Secrets.
+
+ConfigMaps store non-sensitive settings, while Secrets store sensitive information.
+
+Pods reference these resources through their container configuration, receiving values as environment variables or mounted files.
+
+Updating ConfigMaps or Secrets does not automatically change environment variables in running containers. A Deployment rollout restart can recreate Pods with the updated configuration.
+
+Secrets require additional security measures, including RBAC and encryption at rest.
+
 ### What is it?
 
 ### Why do we need it?
